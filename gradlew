@@ -34,7 +34,7 @@ if ! is_cygwin && ! is_darwin && ! is_sunos ; then
         cygwin*|msys*|mingw*)
             MAX_FD=maximum ;;
         *)
-            MAX_FD=$(ulimit -H -n) 2>/dev/null) ;;
+            MAX_FD=$(ulimit -H -n) 2>/dev/null
     esac
 fi
 
