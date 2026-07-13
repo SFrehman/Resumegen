@@ -1415,6 +1415,47 @@ fun ResumePreviewScreen(
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Layout Template Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("CV Layout:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf("Modern Minimalist", "Executive Elegant", "Professional Split").forEach { tName ->
+                            val shortName = when (tName) {
+                                "Modern Minimalist" -> "Minimalist"
+                                "Executive Elegant" -> "Executive"
+                                else -> "Split-Col"
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (selectedTemplate == tName) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                                    )
+                                    .clickable {
+                                        selectedTemplate = tName
+                                        viewModel.selectTemplate(tName)
+                                        viewModel.saveCurrentResume()
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .testTag("template_selector_$shortName")
+                            ) {
+                                Text(
+                                    text = shortName,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (selectedTemplate == tName) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -1432,163 +1473,566 @@ fun ResumePreviewScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                // Header Block
-                item {
-                    Text(
-                        text = if (resume.name.isBlank()) "YOUR NAME" else resume.name.uppercase(),
-                        fontSize = (22f * fontSizeMultiplier).sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(android.graphics.Color.parseColor(selectedColorHex))
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    val contacts = listOfNotNull(
-                        if (resume.city.isNotBlank()) resume.city else null,
-                        if (resume.country.isNotBlank()) resume.country else null,
-                        if (resume.phone.isNotBlank()) resume.phone else null,
-                        if (resume.email.isNotBlank()) resume.email else null
-                    ).joinToString("  |  ")
-                    
-                    if (contacts.isNotBlank()) {
-                        Text(contacts, fontSize = (10f * fontSizeMultiplier).sp, color = Color.DarkGray)
-                    }
-
-                    val links = listOfNotNull(
-                        if (resume.website.isNotBlank()) "Portfolio: ${resume.website}" else null,
-                        if (resume.github.isNotBlank()) "GitHub: ${resume.github}" else null
-                    ).joinToString("  |  ")
-
-                    if (links.isNotBlank()) {
-                        Text(links, fontSize = (10f * fontSizeMultiplier).sp, color = Color.Gray, modifier = Modifier.padding(top = 2.dp))
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(Color(android.graphics.Color.parseColor(selectedColorHex)))
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                // Summary
-                if (resume.summary.isNotBlank()) {
+                if (selectedTemplate == "Professional Split") {
                     item {
-                        Text("PROFESSIONAL SUMMARY", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
-                        Text(
-                            text = resume.summary,
-                            fontSize = (10f * fontSizeMultiplier).sp,
-                            color = Color.Black,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
-                            textAlign = TextAlign.Justify
-                        )
-                    }
-                }
-
-                // Experiences
-                val activeExps = resume.experiences.filter { it.organization.isNotBlank() }
-                if (activeExps.isNotEmpty()) {
-                    item {
-                        Text("EXPERIENCE", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    items(activeExps) { exp ->
-                        Column(modifier = Modifier.padding(bottom = 10.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // LEFT SIDEBAR (35%)
+                            Column(
+                                modifier = Modifier
+                                    .weight(0.35f)
+                                    .padding(end = 12.dp)
                             ) {
-                                Text(exp.role, fontWeight = FontWeight.Bold, fontSize = (10.5f * fontSizeMultiplier).sp, color = Color.Black)
-                                Text("${exp.startYear} - ${if (exp.endYear.isBlank()) "Present" else exp.endYear}", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
-                            }
-                            Text(exp.organization, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
-                            
-                            exp.bullets.forEach { bullet ->
-                                if (bullet.isNotBlank()) {
-                                    Row(
-                                        modifier = Modifier.padding(start = 8.dp, top = 2.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Text("•", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
-                                        Text(bullet, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Projects
-                val activeProjects = resume.projects.filter { it.title.isNotBlank() }
-                if (activeProjects.isNotEmpty()) {
-                    item {
-                        Text("PROJECTS & PORTFOLIOS", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    items(activeProjects) { proj ->
-                        Column(modifier = Modifier.padding(bottom = 10.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
+                                // Contacts
                                 Text(
-                                    text = if (proj.stack.isNotBlank()) "${proj.title} (${proj.stack})" else proj.title,
+                                    text = "CONTACT",
+                                    fontSize = (11f * fontSizeMultiplier).sp,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = (10.5f * fontSizeMultiplier).sp,
-                                    color = Color.Black
+                                    color = Color(android.graphics.Color.parseColor(selectedColorHex)),
+                                    modifier = Modifier.padding(bottom = 6.dp)
                                 )
-                                if (proj.role.isNotBlank()) {
-                                    Text(proj.role, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.Gray)
+                                if (resume.phone.isNotBlank()) {
+                                    Text("Phone:", fontSize = (9f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                    Text(resume.phone, fontSize = (8.5f * fontSizeMultiplier).sp, color = Color.DarkGray, modifier = Modifier.padding(bottom = 4.dp))
+                                }
+                                if (resume.email.isNotBlank()) {
+                                    Text("Email:", fontSize = (9f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                    Text(resume.email, fontSize = (8.5f * fontSizeMultiplier).sp, color = Color.DarkGray, modifier = Modifier.padding(bottom = 4.dp))
+                                }
+                                if (resume.city.isNotBlank() || resume.country.isNotBlank()) {
+                                    Text("Location:", fontSize = (9f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                    val loc = listOfNotNull(
+                                        if (resume.city.isNotBlank()) resume.city else null,
+                                        if (resume.country.isNotBlank()) resume.country else null
+                                    ).joinToString(", ")
+                                    Text(loc, fontSize = (8.5f * fontSizeMultiplier).sp, color = Color.DarkGray, modifier = Modifier.padding(bottom = 4.dp))
+                                }
+                                if (resume.website.isNotBlank()) {
+                                    Text("Portfolio:", fontSize = (9f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                    Text(resume.website, fontSize = (8.5f * fontSizeMultiplier).sp, color = Color.DarkGray, modifier = Modifier.padding(bottom = 4.dp))
+                                }
+                                if (resume.github.isNotBlank()) {
+                                    Text("GitHub:", fontSize = (9f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                    Text(resume.github, fontSize = (8.5f * fontSizeMultiplier).sp, color = Color.DarkGray, modifier = Modifier.padding(bottom = 12.dp))
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // Skills
+                                val activeSkills = resume.skills.filter { it.label.isNotBlank() && it.items.isNotEmpty() }
+                                if (activeSkills.isNotEmpty()) {
+                                    Text(
+                                        text = "SKILLS",
+                                        fontSize = (11f * fontSizeMultiplier).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(android.graphics.Color.parseColor(selectedColorHex)),
+                                        modifier = Modifier.padding(bottom = 6.dp)
+                                    )
+                                    activeSkills.forEach { group ->
+                                        Text(group.label, fontSize = (9f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                        Text(
+                                            text = group.items.joinToString(", "),
+                                            fontSize = (8.5f * fontSizeMultiplier).sp,
+                                            color = Color.DarkGray,
+                                            modifier = Modifier.padding(bottom = 8.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // Education
+                                val activeEdus = resume.education.filter { it.institute.isNotBlank() }
+                                if (activeEdus.isNotEmpty()) {
+                                    Text(
+                                        text = "EDUCATION",
+                                        fontSize = (11f * fontSizeMultiplier).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(android.graphics.Color.parseColor(selectedColorHex)),
+                                        modifier = Modifier.padding(bottom = 6.dp)
+                                    )
+                                    activeEdus.forEach { edu ->
+                                        Text(edu.institute, fontSize = (9f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                        Text(edu.degree, fontSize = (8.5f * fontSizeMultiplier).sp, fontStyle = FontStyle.Italic, color = Color.DarkGray)
+                                        Text("${edu.startYear} - ${edu.endYear}", fontSize = (8f * fontSizeMultiplier).sp, color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
+                                    }
                                 }
                             }
-                            proj.bullets.forEach { bullet ->
-                                if (bullet.isNotBlank()) {
-                                    Row(
-                                        modifier = Modifier.padding(start = 8.dp, top = 2.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Text("•", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
-                                        Text(bullet, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+
+                            // Vertical divider line
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(600.dp)
+                                    .background(Color.LightGray.copy(alpha = 0.5f))
+                            )
+
+                            // RIGHT MAIN COLUMN (65%)
+                            Column(
+                                modifier = Modifier
+                                    .weight(0.65f)
+                                    .padding(start = 12.dp)
+                            ) {
+                                // Name & Title
+                                Text(
+                                    text = if (resume.name.isBlank()) "YOUR NAME" else resume.name.uppercase(),
+                                    fontSize = (22f * fontSizeMultiplier).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(android.graphics.Color.parseColor(selectedColorHex))
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // Summary
+                                if (resume.summary.isNotBlank()) {
+                                    Text(
+                                        text = "PROFESSIONAL SUMMARY",
+                                        fontSize = (11f * fontSizeMultiplier).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(android.graphics.Color.parseColor(selectedColorHex))
+                                    )
+                                    Text(
+                                        text = resume.summary,
+                                        fontSize = (10f * fontSizeMultiplier).sp,
+                                        color = Color.Black,
+                                        modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                                        textAlign = TextAlign.Justify
+                                    )
+                                }
+
+                                // Experience
+                                val activeExps = resume.experiences.filter { it.organization.isNotBlank() }
+                                if (activeExps.isNotEmpty()) {
+                                    Text(
+                                        text = "EXPERIENCE",
+                                        fontSize = (11f * fontSizeMultiplier).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(android.graphics.Color.parseColor(selectedColorHex))
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    activeExps.forEach { exp ->
+                                        Column(modifier = Modifier.padding(bottom = 10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(exp.role, fontWeight = FontWeight.Bold, fontSize = (10.5f * fontSizeMultiplier).sp, color = Color.Black)
+                                                Text("${exp.startYear} - ${if (exp.endYear.isBlank()) "Present" else exp.endYear}", fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.Black)
+                                            }
+                                            Text(exp.organization, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                                            
+                                            exp.bullets.forEach { bullet ->
+                                                if (bullet.isNotBlank()) {
+                                                    Row(
+                                                        modifier = Modifier.padding(start = 8.dp, top = 2.dp),
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Text("•", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                                        Text(bullet, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Projects
+                                val activeProjects = resume.projects.filter { it.title.isNotBlank() }
+                                if (activeProjects.isNotEmpty()) {
+                                    Text(
+                                        text = "PROJECTS & PORTFOLIOS",
+                                        fontSize = (11f * fontSizeMultiplier).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(android.graphics.Color.parseColor(selectedColorHex)),
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    activeProjects.forEach { proj ->
+                                        Column(modifier = Modifier.padding(bottom = 10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = if (proj.stack.isNotBlank()) "${proj.title} (${proj.stack})" else proj.title,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = (10.5f * fontSizeMultiplier).sp,
+                                                    color = Color.Black
+                                                )
+                                                if (proj.role.isNotBlank()) {
+                                                    Text(proj.role, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.Gray)
+                                                }
+                                            }
+                                            proj.bullets.forEach { bullet ->
+                                                if (bullet.isNotBlank()) {
+                                                    Row(
+                                                        modifier = Modifier.padding(start = 8.dp, top = 2.dp),
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Text("•", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                                        Text(bullet, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-
-                // Education
-                val activeEdus = resume.education.filter { it.institute.isNotBlank() }
-                if (activeEdus.isNotEmpty()) {
+                } else if (selectedTemplate == "Executive Elegant") {
+                    // Header centered block
                     item {
-                        Text("EDUCATION", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-                    items(activeEdus) { edu ->
-                        Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(edu.institute, fontWeight = FontWeight.Bold, fontSize = (10.5f * fontSizeMultiplier).sp, color = Color.Black)
-                                Text("${edu.startYear} - ${edu.endYear}", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (resume.name.isBlank()) "YOUR NAME" else resume.name.uppercase(),
+                                fontSize = (22f * fontSizeMultiplier).sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(android.graphics.Color.parseColor(selectedColorHex)),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            val contacts = listOfNotNull(
+                                if (resume.city.isNotBlank() || resume.country.isNotBlank()) {
+                                    listOfNotNull(resume.city.ifBlank { null }, resume.country.ifBlank { null }).joinToString(", ")
+                                } else null,
+                                if (resume.phone.isNotBlank()) resume.phone else null,
+                                if (resume.email.isNotBlank()) resume.email else null
+                            ).joinToString("   •   ")
+                            
+                            if (contacts.isNotBlank()) {
+                                Text(contacts, fontSize = (10f * fontSizeMultiplier).sp, color = Color.DarkGray, textAlign = TextAlign.Center)
                             }
-                            Text(edu.degree, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+
+                            val links = listOfNotNull(
+                                if (resume.website.isNotBlank()) "Portfolio: ${resume.website}" else null,
+                                if (resume.github.isNotBlank()) "GitHub: ${resume.github}" else null
+                            ).joinToString("   •   ")
+
+                            if (links.isNotBlank()) {
+                                Text(links, fontSize = (10f * fontSizeMultiplier).sp, color = Color.Gray, modifier = Modifier.padding(top = 2.dp), textAlign = TextAlign.Center)
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                            // Double border separator
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(3.dp)
+                                    .background(Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
                         }
                     }
-                }
 
-                // Skills
-                val activeSkills = resume.skills.filter { it.label.isNotBlank() && it.items.isNotEmpty() }
-                if (activeSkills.isNotEmpty()) {
-                    item {
-                        Text("TECHNICAL EXPERTISE", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
-                        Spacer(modifier = Modifier.height(4.dp))
+                    // Summary
+                    if (resume.summary.isNotBlank()) {
+                        item {
+                            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "PROFESSIONAL SUMMARY",
+                                    fontSize = (11f * fontSizeMultiplier).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(android.graphics.Color.parseColor(selectedColorHex)),
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = resume.summary,
+                                    fontSize = (10f * fontSizeMultiplier).sp,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(bottom = 12.dp),
+                                    textAlign = TextAlign.Justify
+                                )
+                            }
+                        }
                     }
-                    items(activeSkills) { group ->
-                        Row(modifier = Modifier.padding(bottom = 4.dp)) {
-                            Text("${group.label}: ", fontWeight = FontWeight.Bold, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.Black)
-                            Text(group.items.joinToString(", "), fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+
+                    // Experiences
+                    val activeExps = resume.experiences.filter { it.organization.isNotBlank() }
+                    if (activeExps.isNotEmpty()) {
+                        item {
+                            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("EXPERIENCE", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)), textAlign = TextAlign.Center)
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        }
+                        items(activeExps) { exp ->
+                            Column(modifier = Modifier.padding(bottom = 10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(exp.role, fontWeight = FontWeight.Bold, fontSize = (10.5f * fontSizeMultiplier).sp, color = Color.Black)
+                                    Text("${exp.startYear} - ${if (exp.endYear.isBlank()) "Present" else exp.endYear}", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                }
+                                Text(exp.organization, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                                
+                                exp.bullets.forEach { bullet ->
+                                    if (bullet.isNotBlank()) {
+                                        Row(
+                                            modifier = Modifier.padding(start = 8.dp, top = 2.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text("•", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                            Text(bullet, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Projects
+                    val activeProjects = resume.projects.filter { it.title.isNotBlank() }
+                    if (activeProjects.isNotEmpty()) {
+                        item {
+                            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("PROJECTS & PORTFOLIOS", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)), textAlign = TextAlign.Center)
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        }
+                        items(activeProjects) { proj ->
+                            Column(modifier = Modifier.padding(bottom = 10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = if (proj.stack.isNotBlank()) "${proj.title} (${proj.stack})" else proj.title,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = (10.5f * fontSizeMultiplier).sp,
+                                        color = Color.Black
+                                    )
+                                    if (proj.role.isNotBlank()) {
+                                        Text(proj.role, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.Gray)
+                                    }
+                                }
+                                proj.bullets.forEach { bullet ->
+                                    if (bullet.isNotBlank()) {
+                                        Row(
+                                            modifier = Modifier.padding(start = 8.dp, top = 2.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text("•", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                            Text(bullet, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Education
+                    val activeEdus = resume.education.filter { it.institute.isNotBlank() }
+                    if (activeEdus.isNotEmpty()) {
+                        item {
+                            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("EDUCATION", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)), textAlign = TextAlign.Center)
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        }
+                        items(activeEdus) { edu ->
+                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(edu.institute, fontWeight = FontWeight.Bold, fontSize = (10.5f * fontSizeMultiplier).sp, color = Color.Black)
+                                    Text("${edu.startYear} - ${edu.endYear}", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                }
+                                Text(edu.degree, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            }
+                        }
+                    }
+
+                    // Skills
+                    val activeSkills = resume.skills.filter { it.label.isNotBlank() && it.items.isNotEmpty() }
+                    if (activeSkills.isNotEmpty()) {
+                        item {
+                            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("TECHNICAL EXPERTISE", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)), textAlign = TextAlign.Center)
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        }
+                        items(activeSkills) { group ->
+                            Row(modifier = Modifier.padding(bottom = 4.dp)) {
+                                Text("${group.label}: ", fontWeight = FontWeight.Bold, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.Black)
+                                Text(group.items.joinToString(", "), fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                            }
+                        }
+                    }
+                } else {
+                    // Modern Minimalist Layout (Left-aligned, standard layout)
+                    // Header Block
+                    item {
+                        Text(
+                            text = if (resume.name.isBlank()) "YOUR NAME" else resume.name.uppercase(),
+                            fontSize = (22f * fontSizeMultiplier).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(android.graphics.Color.parseColor(selectedColorHex))
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        val contacts = listOfNotNull(
+                            if (resume.city.isNotBlank()) resume.city else null,
+                            if (resume.country.isNotBlank()) resume.country else null,
+                            if (resume.phone.isNotBlank()) resume.phone else null,
+                            if (resume.email.isNotBlank()) resume.email else null
+                        ).joinToString("  |  ")
+                        
+                        if (contacts.isNotBlank()) {
+                            Text(contacts, fontSize = (10f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                        }
+
+                        val links = listOfNotNull(
+                            if (resume.website.isNotBlank()) "Portfolio: ${resume.website}" else null,
+                            if (resume.github.isNotBlank()) "GitHub: ${resume.github}" else null
+                        ).joinToString("  |  ")
+
+                        if (links.isNotBlank()) {
+                            Text(links, fontSize = (10f * fontSizeMultiplier).sp, color = Color.Gray, modifier = Modifier.padding(top = 2.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(2.dp)
+                                .background(Color(android.graphics.Color.parseColor(selectedColorHex)))
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    // Summary
+                    if (resume.summary.isNotBlank()) {
+                        item {
+                            Text("PROFESSIONAL SUMMARY", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            Text(
+                                text = resume.summary,
+                                fontSize = (10f * fontSizeMultiplier).sp,
+                                color = Color.Black,
+                                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                                textAlign = TextAlign.Justify
+                            )
+                        }
+                    }
+
+                    // Experiences
+                    val activeExps = resume.experiences.filter { it.organization.isNotBlank() }
+                    if (activeExps.isNotEmpty()) {
+                        item {
+                            Text("EXPERIENCE", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                        items(activeExps) { exp ->
+                            Column(modifier = Modifier.padding(bottom = 10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(exp.role, fontWeight = FontWeight.Bold, fontSize = (10.5f * fontSizeMultiplier).sp, color = Color.Black)
+                                    Text("${exp.startYear} - ${if (exp.endYear.isBlank()) "Present" else exp.endYear}", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                }
+                                Text(exp.organization, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                                
+                                exp.bullets.forEach { bullet ->
+                                    if (bullet.isNotBlank()) {
+                                        Row(
+                                            modifier = Modifier.padding(start = 8.dp, top = 2.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text("•", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                            Text(bullet, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Projects
+                    val activeProjects = resume.projects.filter { it.title.isNotBlank() }
+                    if (activeProjects.isNotEmpty()) {
+                        item {
+                            Text("PROJECTS & PORTFOLIOS", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                        items(activeProjects) { proj ->
+                            Column(modifier = Modifier.padding(bottom = 10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = if (proj.stack.isNotBlank()) "${proj.title} (${proj.stack})" else proj.title,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = (10.5f * fontSizeMultiplier).sp,
+                                        color = Color.Black
+                                    )
+                                    if (proj.role.isNotBlank()) {
+                                        Text(proj.role, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.Gray)
+                                    }
+                                }
+                                proj.bullets.forEach { bullet ->
+                                    if (bullet.isNotBlank()) {
+                                        Row(
+                                            modifier = Modifier.padding(start = 8.dp, top = 2.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text("•", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                            Text(bullet, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Education
+                    val activeEdus = resume.education.filter { it.institute.isNotBlank() }
+                    if (activeEdus.isNotEmpty()) {
+                        item {
+                            Text("EDUCATION", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                        items(activeEdus) { edu ->
+                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(edu.institute, fontWeight = FontWeight.Bold, fontSize = (10.5f * fontSizeMultiplier).sp, color = Color.Black)
+                                    Text("${edu.startYear} - ${edu.endYear}", fontSize = (10f * fontSizeMultiplier).sp, color = Color.Black)
+                                }
+                                Text(edu.degree, fontStyle = FontStyle.Italic, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            }
+                        }
+                    }
+
+                    // Skills
+                    val activeSkills = resume.skills.filter { it.label.isNotBlank() && it.items.isNotEmpty() }
+                    if (activeSkills.isNotEmpty()) {
+                        item {
+                            Text("TECHNICAL EXPERTISE", fontSize = (11f * fontSizeMultiplier).sp, fontWeight = FontWeight.Bold, color = Color(android.graphics.Color.parseColor(selectedColorHex)))
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                        items(activeSkills) { group ->
+                            Row(modifier = Modifier.padding(bottom = 4.dp)) {
+                                Text("${group.label}: ", fontWeight = FontWeight.Bold, fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.Black)
+                                Text(group.items.joinToString(", "), fontSize = (9.5f * fontSizeMultiplier).sp, color = Color.DarkGray)
+                            }
                         }
                     }
                 }
