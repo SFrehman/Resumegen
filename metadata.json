@@ -1,0 +1,6 @@
+{
+  "name": "Resume Builder",
+  "description": "A professional on-device resume builder with elegant layouts, local persistence, customizable templates, and PDF/DOCX downloads.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
