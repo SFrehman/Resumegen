@@ -8,7 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.example.data.local.ResumeDatabase
 import com.example.data.repository.ResumeRepository
-import com.example.ui.screens.MainScreen
+import com.example.ui.screens.ResumeBuilderApp
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.ResumeViewModel
 
@@ -16,17 +16,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        // Create Room database instance
-        val database = ResumeDatabase.getDatabase(applicationContext)
-        val repository = ResumeRepository(database.resumeDao)
-        val resumeViewModel = ResumeViewModel(repository)
-
         setContent {
+            val database = ResumeDatabase.getDatabase(this)
+            val repository = ResumeRepository(database.resumeDao)
+            val resumeViewModel = ResumeViewModel(repository)
             val isDarkTheme by resumeViewModel.isDarkTheme.collectAsState()
 
             MyApplicationTheme(darkTheme = isDarkTheme) {
-                MainScreen(viewModel = resumeViewModel)
+                ResumeBuilderApp(viewModel = resumeViewModel)
             }
         }
     }

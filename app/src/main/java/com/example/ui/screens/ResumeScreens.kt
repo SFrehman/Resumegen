@@ -37,6 +37,7 @@ import com.example.data.model.*
 import com.example.ui.components.JaniDevFooter
 import com.example.ui.viewmodel.ResumeViewModel
 import com.example.util.ResumeExporter
+import com.example.util.GeminiHelper
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -151,7 +152,7 @@ fun ResumeBuilderApp(
                 NavigationBarItem(
                     selected = activeTab == "about",
                     onClick = { activeTab = "about" },
-                    icon = { Icon(Icons.Default.Info, contentDescription = "About JaniDev") },
+                    icon = { Icon(Icons.Default.Info, contentDescription = "About Saif Ur Rehman") },
                     label = { Text("About") },
                     modifier = Modifier.testTag("nav_tab_about")
                 )
@@ -628,16 +629,94 @@ fun ContactStep(resume: ResumeEntity, viewModel: ResumeViewModel) {
 
 @Composable
 fun SummaryStep(resume: ResumeEntity, viewModel: ResumeViewModel) {
+    val templates = remember {
+        listOf(
+            "Android Developer" to "Experienced Android Developer with a strong foundation in Kotlin, Jetpack Compose, and modern architectural patterns (MVVM/MVI). Passionate about building high-performance, responsive, and visually polished mobile applications with elegant UI/UX.",
+            "Full Stack Web Dev" to "Results-driven Full Stack Developer skilled in modern frontend frameworks (React, Vue) and backend technologies (Node.js, Python, SQL). Adept at designing scalable web architectures, writing clean code, and delivering seamless user experiences.",
+            "UI/UX Designer" to "Creative UI/UX Designer with a passion for crafting intuitive, user-centered digital interfaces. Experienced in wireframing, high-fidelity prototyping, user research, and collaborating with developers to bring pixel-perfect designs to life.",
+            "QA Engineer" to "Detail-oriented QA Engineer specialized in manual and automated testing of web and mobile applications. Dedicated to ensuring software reliability, performance, and accessibility through comprehensive test planning and execution.",
+            "Product Manager" to "Strategic Product Manager with a proven track record of leading cross-functional teams to define, build, and launch successful digital products. Skilled in agile methodologies, data-driven decision-making, and aligning product vision with user needs."
+        )
+    }
+
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
-            text = "Professional Summary Statement",
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            text = "Professional Summary",
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "Select a universal field description to populate as a starting template, or type your own custom description below.",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        Text(
+            text = "Universal Field Templates",
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 6.dp)
         )
+
+        // Row of Custom Chips for universal templates
+        androidx.compose.foundation.lazy.LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
+        ) {
+            items(templates.size) { index ->
+                val (title, text) = templates[index]
+                val isSelected = selectedIndex == index
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .clickable {
+                            selectedIndex = if (isSelected) null else index
+                            if (selectedIndex != null) {
+                                viewModel.updateSummary(text)
+                            }
+                        }
+                        .border(
+                            1.dp,
+                            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                            RoundedCornerShape(20.dp)
+                        )
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = title,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = "Your Summary Description",
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+
         OutlinedTextField(
             value = resume.summary,
-            onValueChange = { viewModel.updateSummary(it) },
+            onValueChange = { 
+                viewModel.updateSummary(it)
+                // Deselect chip if they edit/customize it beyond the exact template text
+                if (selectedIndex != null && templates[selectedIndex!!].second != it) {
+                    selectedIndex = null
+                }
+            },
             placeholder = { Text("Introduce your technical focus, primary skills, and accomplishments...") },
             modifier = Modifier
                 .fillMaxWidth()
@@ -1056,6 +1135,17 @@ fun ProjectsStep(resume: ResumeEntity, viewModel: ResumeViewModel) {
                                     .fillMaxWidth()
                                     .height(110.dp)
                             )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            AIEnhanceButton(
+                                initialText = bulletsText,
+                                promptContext = "Project title: ${proj.title}, Tech stack: ${proj.stack}, Role: ${proj.role}",
+                                onEnhanced = { enhancedText ->
+                                    val linesList = enhancedText.split("\n").filter { it.isNotBlank() }
+                                    viewModel.updateProject(index, proj.copy(bullets = linesList))
+                                }
+                            )
                         }
                     }
                 }
@@ -1142,7 +1232,7 @@ fun ExperienceStep(resume: ResumeEntity, viewModel: ResumeViewModel) {
                                     value = exp.organization,
                                     onValueChange = { viewModel.updateExperience(index, exp.copy(organization = it)) },
                                     label = { Text("Company / Organization") },
-                                    placeholder = { Text("e.g. JaniDev Studio") },
+                                    placeholder = { Text("e.g. Tech Solutions") },
                                     singleLine = true,
                                     modifier = Modifier.weight(1.2f)
                                 )
@@ -1192,6 +1282,17 @@ fun ExperienceStep(resume: ResumeEntity, viewModel: ResumeViewModel) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(110.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            AIEnhanceButton(
+                                initialText = bulletsText,
+                                promptContext = "Experience at company: ${exp.organization}, Job role: ${exp.role}",
+                                onEnhanced = { enhancedText ->
+                                    val linesList = enhancedText.split("\n").filter { it.isNotBlank() }
+                                    viewModel.updateExperience(index, exp.copy(bullets = linesList))
+                                }
                             )
                         }
                     }
@@ -1599,6 +1700,48 @@ fun ResumePreviewScreen(
 
 @Composable
 fun AboutScreen() {
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showDialog = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.9f))
+                    .clickable { showDialog = false },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(24.dp))
+                        .border(2.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = painterResource(id = R.drawable.dev_pic),
+                        contentDescription = "Saif Ur Rehman portrait full screen",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                }
+                
+                Text(
+                    text = "Tap anywhere to close",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 48.dp)
+                )
+            }
+        }
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -1620,13 +1763,15 @@ fun AboutScreen() {
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Profile Image Frame
+                    // Profile Image Frame (Clickable)
                     Box(
                         modifier = Modifier
                             .size(130.dp)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
                             .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            .clickable { showDialog = true }
                             .padding(4.dp)
+                            .testTag("developer_portrait_image")
                     ) {
                         Box(
                             modifier = Modifier
@@ -1645,7 +1790,7 @@ fun AboutScreen() {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "JaniDev",
+                        text = "Saif Ur Rehman",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1721,3 +1866,212 @@ fun AboutScreen() {
         }
     }
 }
+
+@Composable
+fun AIEnhanceButton(
+    initialText: String,
+    promptContext: String,
+    onEnhanced: (String) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    var shortDesc by remember { mutableStateOf(initialText) }
+    var isGenerating by remember { mutableStateOf(false) }
+    var generatedResult by remember { mutableStateOf("") }
+    var statusMessage by remember { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
+
+    // Trigger button
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End
+    ) {
+        TextButton(
+            onClick = {
+                shortDesc = initialText
+                generatedResult = ""
+                statusMessage = ""
+                showDialog = true
+            },
+            modifier = Modifier.testTag("ai_enhance_button")
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Improve with AI",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+
+    if (showDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { if (!isGenerating) showDialog = false }
+        ) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "AI Description Improver",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(
+                            onClick = { if (!isGenerating) showDialog = false },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
+                        }
+                    }
+
+                    Text(
+                        text = "Enter a short, simple description of what you did. Gemini AI will rewrite it into professional, high-impact resume bullet points.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+
+                    OutlinedTextField(
+                        value = shortDesc,
+                        onValueChange = { shortDesc = it },
+                        placeholder = { Text("e.g., I built the UI for a fitness app in Kotlin and made it fast.") },
+                        label = { Text("Your Short Description") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                        enabled = !isGenerating
+                    )
+
+                    if (isGenerating) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Polishing bullet points...",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                    } else if (generatedResult.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "AI Suggestions:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            OutlinedTextField(
+                                value = generatedResult,
+                                onValueChange = { generatedResult = it },
+                                label = { Text("Edit generated text if needed") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(130.dp)
+                            )
+                        }
+                    }
+
+                    if (statusMessage.isNotEmpty()) {
+                        Text(
+                            text = statusMessage,
+                            color = if (statusMessage.startsWith("Error")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            fontSize = 11.sp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = { showDialog = false },
+                            enabled = !isGenerating
+                        ) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        if (generatedResult.isEmpty()) {
+                            Button(
+                                onClick = {
+                                    if (shortDesc.trim().isEmpty()) {
+                                        statusMessage = "Error: Please enter a short description first."
+                                        return@Button
+                                    }
+                                    isGenerating = true
+                                    statusMessage = ""
+                                    scope.launch {
+                                        val prompt = "You are an expert technical resume writer. Take the following input description and rewrite it into 2 to 3 highly professional, high-impact resume bullet points. " +
+                                                "Start each bullet point with a strong action verb (e.g., Developed, Designed, Engineered, Optimized, Spearheaded). Do not include any introductory text, outro text, markdown bolding, or numbering. Just output the clean bullet points separated by newlines.\n\n" +
+                                                "Context: $promptContext\n" +
+                                                "Input description: $shortDesc"
+                                        val result = GeminiHelper.generateContent(prompt)
+                                        isGenerating = false
+                                        if (result.startsWith("Error")) {
+                                            statusMessage = result
+                                        } else {
+                                            generatedResult = result
+                                        }
+                                    }
+                                },
+                                enabled = !isGenerating
+                            ) {
+                                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Generate")
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    onEnhanced(generatedResult)
+                                    showDialog = false
+                                }
+                            ) {
+                                Text("Apply Suggestions")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
